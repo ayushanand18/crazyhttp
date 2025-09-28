@@ -27,7 +27,7 @@ func main() {
 			respChanel := ctx.Value(constants.WebsocketResponseChannel).(chan types.WebsocketStreamChunk)
 
 			for chunk := range reqChanel {
-				fmt.Printf("Received chunk: ID=%d, Type=%d, Data=%s", chunk.Id, chunk.MessageType, string(chunk.Data))
+				fmt.Printf("Received chunk: ID=%d, Type=%d, Data=%s\n", chunk.Id, chunk.MessageType, string(chunk.Data))
 				respChanel <- types.WebsocketStreamChunk{
 					Data: []byte(fmt.Sprintf("Echo: %s", string(chunk.Data))),
 				}

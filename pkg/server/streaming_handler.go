@@ -26,6 +26,12 @@ func streamingDefaultHandler(
 	w.Header().Set("X-Accel-Buffering", "no")
 	w.WriteHeader(http.StatusOK)
 
+	if len(m.options.AllowedOrigins) > 0 && !ashttp.IsOriginAllowed(r.Header.Get("Origin"), m.options.AllowedOrigins) {
+		w.WriteHeader(http.StatusForbidden)
+		slog.ErrorContext(ctx, "origin not allowed", "origin", r.Header.Get("Origin"))
+		return
+	}
+
 	flusher, ok := w.(http.Flusher)
 	if !ok {
 		http.Error(w, "Streaming unsupported by this server!", http.StatusInternalServerError)

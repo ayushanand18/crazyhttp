@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/json"
 	"io"
-	"log"
 	"log/slog"
 	"net/http"
 	"net/http/httputil"

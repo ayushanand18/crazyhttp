@@ -13,17 +13,3 @@ type StreamChunk struct {
 	Data []byte
 }
 
-// WebsocketStreamChunk represents a single chunk of data in a streaming HTTP response,
-// such as Server-Sent Events (SSE) or other streaming protocols.
-//
-// Fields
-//
-//	Id:   A unique identifier for the chunk, typically used to track ordering
-//	      or support reconnection/resume logic.
-//	MessageType: The type of message being sent (e.g., text, binary, close).
-//	Data: The raw byte payload of the chunk to be sent to the client.
-type WebsocketStreamChunk struct {
-	Id          uint32
-	MessageType int
-	Data        []byte
-}
