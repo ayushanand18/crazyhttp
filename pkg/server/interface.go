@@ -35,6 +35,9 @@ type HttpServer interface {
 	OPTIONS(string) Method
 	CONNECT(string) Method
 	TRACE(string) Method
+
+	// Websocket
+	WebSocket(string) WebSocket
 }
 
 func NewHttpServer(ctx context.Context) HttpServer {

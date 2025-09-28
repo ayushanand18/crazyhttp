@@ -30,4 +30,8 @@ const (
 	HttpRequestURLParams               ContextKeys = "request_url_params"
 	HttpRequestPathValues              ContextKeys = "request_path_values"
 	RateLimitCustomKey                 ContextKeys = "rate_limit_custom_key"
+
+	// websocket specific context keys
+	WebsocketRequestChannel  ContextKeys = "websocket_request_channel"
+	WebsocketResponseChannel ContextKeys = "websocket_response_channel"
 )

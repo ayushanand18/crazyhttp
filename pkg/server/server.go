@@ -124,6 +124,10 @@ func (s *server) TRACE(url string) Method {
 	return NewMethod(constants.HttpMethodTrace, url, s)
 }
 
+func (s *server) WebSocket(url string) WebSocket {
+	return NewWebsocket(url, s)
+}
+
 // serve the HTTP request, and provide a response
 func (h *rootHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	defer func() {

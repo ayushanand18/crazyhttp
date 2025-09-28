@@ -11,6 +11,9 @@ import (
 	"os"
 
 	"github.com/ayushanand18/crazyhttp/internal/config"
+	internalhttp "github.com/ayushanand18/crazyhttp/internal/http"
+	"github.com/ayushanand18/crazyhttp/pkg/types"
+	gws "github.com/gorilla/websocket"
 )
 
 func checkIfTlsCertificateIsMissing(ctx context.Context) bool {
@@ -77,4 +80,28 @@ func DumpRequest(req *http.Request) {
 
 	// Restore the body again to ensure downstream handlers can read it
 	req.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
+}
+
+// GetWebSocketHandlerFunc wraps a method onto websocket handler func
+func (ws *websocket) GetWebSocketHandlerFunc(handler types.WebsocketHandlerFunc) func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		upgrader := gws.Upgrader{
+			CheckOrigin: func(req *http.Request) bool {
+				if len(ws.options.AllowedOrigins) > 0 &&
+					!internalhttp.IsOriginAllowed(r.Header.Get("Origin"), ws.options.AllowedOrigins) {
+					return false
+				}
+				return true
+			},
+		}
+
+		c, err := upgrader.Upgrade(w, r, nil)
+		if err != nil {
+			slog.Error("Error handling Upgrading websocket", "error", err)
+			return
+		}
+		defer c.Close()
+
+		websocketHandler(r.Context(), c, w, r, ws, handler)
+	}
 }

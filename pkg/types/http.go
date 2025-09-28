@@ -7,6 +7,7 @@ import (
 
 type MethodOptions struct {
 	IsStreamingResponse bool
+	AllowedOrigins      []string
 }
 
 // HandlerFunc defines a function for serving HTTP requests.
@@ -90,8 +91,43 @@ type HttpRequestMiddleware func(ctx context.Context, incomingRequest interface{}
 //	                  should not be sent.
 type HttpResponseMiddleware func(ctx context.Context, incomingResponse interface{}) (outgoingResponse interface{}, err error)
 
+// RateLimitOptions specifies configuration settings for applying rate limiting
+// to HTTP requests.
+//
+// Fields
+//
+//	Limit:                   Maximum number of requests allowed within the specified
+//	                          bucket duration.
+//	BucketDurationInSeconds:  Length of the rate-limit window in seconds during which
+//	                          the Limit applies.
+//	ContextKey:               Context key whose associated value is used to identify
+//	                          the client (e.g., user ID or IP address) for rate limiting.
 type RateLimitOptions struct {
 	Limit                   int    // number of requests allowed in the given duration
 	BucketDurationInSeconds int64  // duration in seconds for which the limit is applicable
 	ContextKey              string // key in context which will be checked for rate limiting
 }
+
+// WebSocketOption defines configuration options for a WebSocket endpoint.
+//
+// Fields
+//
+//	AllowedOrigins: A list of allowed origin URLs for incoming WebSocket
+//	                upgrade requests. If empty, no origin restriction is applied.
+type WebSocketOption struct {
+	AllowedOrigins []string
+}
+
+// WebsocketHandlerFunc defines a function type for handling a WebSocket
+// connection after it has been successfully upgraded.
+//
+// Parameters
+//
+//	ctx: The request-scoped context carrying deadlines, cancellation signals,
+//	     and other metadata for the lifetime of the WebSocket session.
+//
+// Returns
+//
+//	err: A non-nil error if the WebSocket session encounters a failure or
+//	     needs to be terminated.
+type WebsocketHandlerFunc func(context.Context) error

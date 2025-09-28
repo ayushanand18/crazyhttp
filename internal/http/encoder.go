@@ -11,16 +11,9 @@ func DefaultHttpEncode(ctx context.Context, response interface{}) (headers map[s
 		"Content-Type": {"application/json; charset=utf-8"},
 	}
 
-	switch v := response.(type) {
-	case string:
-		body = []byte(v)
-	case []byte:
-		body = v
-	default:
-		body, err = json.Marshal(v)
-		if err != nil {
-			return headers, nil, err
-		}
+	body, err = GetDefaultSerialization(response)
+	if err != nil {
+		return headers, body, err
 	}
 
 	return headers, body, nil
@@ -32,4 +25,20 @@ func DefaultHttpDecode(ctx context.Context, r *http.Request) (outgoingRequest in
 	}
 
 	return outgoingRequest, nil
+}
+
+func GetDefaultSerialization(req interface{}) (body []byte, err error) {
+	switch v := req.(type) {
+	case string:
+		body = []byte(v)
+	case []byte:
+		body = v
+	default:
+		body, err = json.Marshal(v)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return body, nil
 }

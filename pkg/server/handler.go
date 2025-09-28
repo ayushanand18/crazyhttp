@@ -31,6 +31,12 @@ func httpDefaultHandler(
 		return
 	}
 
+	if len(m.options.AllowedOrigins) > 0 && !ashttp.IsOriginAllowed(r.Header.Get("Origin"), m.options.AllowedOrigins) {
+		w.WriteHeader(http.StatusForbidden)
+		slog.ErrorContext(ctx, "origin not allowed", "origin", r.Header.Get("Origin"))
+		return
+	}
+
 	if decoder != nil {
 		request, err = decoder(ctx, r)
 		if err != nil {
@@ -84,7 +90,7 @@ func httpDefaultHandler(
 		}
 	}
 
-	headers = ashttp.PopulateDefaultServerHeaders(ctx, headers)
+	headers = ashttp.PopulateDefaultServerHeaders(ctx, r, headers)
 
 	for key, value := range headers {
 		w.Header().Del(key)

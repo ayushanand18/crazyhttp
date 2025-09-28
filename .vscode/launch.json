@@ -37,11 +37,11 @@
             "asRoot": true,
         },
         {
-            "name": "Run MCP Server",
+            "name": "Websocket Server",
             "type": "go",
             "request": "launch",
             "mode": "auto",
-            "program": "${workspaceFolder}/examples/mcp/",
+            "program": "${workspaceFolder}/examples/websocket/",
             "asRoot": true,
         },
     ]
