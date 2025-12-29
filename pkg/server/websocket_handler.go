@@ -7,8 +7,8 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/ayushanand18/crazyhttp/internal/constants"
 	ashttp "github.com/ayushanand18/crazyhttp/internal/http"
+	"github.com/ayushanand18/crazyhttp/pkg/constants"
 	"github.com/ayushanand18/crazyhttp/pkg/errors"
 	"github.com/ayushanand18/crazyhttp/pkg/types"
 	gws "github.com/gorilla/websocket"

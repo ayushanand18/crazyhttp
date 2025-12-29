@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ayushanand18/crazyhttp/internal/constants"
+	"github.com/ayushanand18/crazyhttp/pkg/constants"
 	crazyserver "github.com/ayushanand18/crazyhttp/pkg/server"
 )
 
@@ -54,7 +54,7 @@ func TestUserRoute_WithUserIdHeader(t *testing.T) {
 		Serve(UserIdHandler)
 
 	if m == nil {
-		
+
 	}
 
 	go func() {

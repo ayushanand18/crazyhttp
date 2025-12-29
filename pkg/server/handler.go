@@ -6,8 +6,8 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/ayushanand18/crazyhttp/internal/constants"
 	ashttp "github.com/ayushanand18/crazyhttp/internal/http"
+	"github.com/ayushanand18/crazyhttp/pkg/constants"
 	"github.com/ayushanand18/crazyhttp/pkg/types"
 	"github.com/gorilla/mux"
 )

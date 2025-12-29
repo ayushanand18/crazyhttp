@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/ayushanand18/crazyhttp/internal/config"
-	"github.com/ayushanand18/crazyhttp/internal/constants"
+	"github.com/ayushanand18/crazyhttp/pkg/constants"
 )
 
 func GetListeningAddress(ctx context.Context) string {

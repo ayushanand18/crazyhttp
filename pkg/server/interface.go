@@ -4,8 +4,8 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/ayushanand18/crazyhttp/internal/constants"
 	"github.com/ayushanand18/crazyhttp/internal/utils"
+	"github.com/ayushanand18/crazyhttp/pkg/constants"
 	"github.com/gorilla/mux"
 	"github.com/quic-go/quic-go"
 	qchttp3 "github.com/quic-go/quic-go/http3"

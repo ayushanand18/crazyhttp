@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"time"
 
-	"github.com/ayushanand18/crazyhttp/internal/constants"
 	"github.com/ayushanand18/crazyhttp/internal/ratelimiter"
+	"github.com/ayushanand18/crazyhttp/pkg/constants"
 	"github.com/ayushanand18/crazyhttp/pkg/types"
 )
 

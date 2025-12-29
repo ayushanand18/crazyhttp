@@ -9,9 +9,9 @@ import (
 	"strings"
 
 	"github.com/ayushanand18/crazyhttp/internal/config"
-	"github.com/ayushanand18/crazyhttp/internal/constants"
 	"github.com/ayushanand18/crazyhttp/internal/tls"
 	"github.com/ayushanand18/crazyhttp/internal/utils"
+	"github.com/ayushanand18/crazyhttp/pkg/constants"
 )
 
 func (s *server) Initialize(ctx context.Context) error {
