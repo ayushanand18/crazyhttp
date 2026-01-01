@@ -115,7 +115,7 @@ func websocketHandler(
 			var err error
 
 			if ws.encoder != nil {
-				headers, encoded, err = ws.encoder(ctx, chunk.Data)
+				headers, encoded, err = ws.encoder(ctx, chunk.Data, nil)
 			} else {
 				headers, encoded, err = ashttp.DefaultHttpEncode(ctx, chunk.Data)
 			}

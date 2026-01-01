@@ -11,7 +11,7 @@
 + [x] media/file responses
 + [x] support plain simple http (without TLS)
 + [ ] generic middlewares server-wide
-+ [ ] endpoint specific middlewares
++ [x] endpoint specific middlewares
 + [ ] web-security (csrf, cors)
 + [ ] auth support (basic auth; jwt auth)
 + [ ] out of the box rate limiting support (options in middleware)

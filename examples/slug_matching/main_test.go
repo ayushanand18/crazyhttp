@@ -18,7 +18,7 @@ type MyCustomResponseType struct {
 	Message string
 }
 
-func encoder(ctx context.Context, response interface{}) (headers map[string][]string, body []byte, err error) {
+func encoder(ctx context.Context, response interface{}, reqErr error) (headers map[string][]string, body []byte, err error) {
 	resp := response.(MyCustomResponseType)
 	headers = make(map[string][]string)
 	headers["X-User-Id"] = []string{resp.UserId}

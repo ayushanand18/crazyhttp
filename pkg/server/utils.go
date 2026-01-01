@@ -105,3 +105,21 @@ func (ws *websocket) GetWebSocketHandlerFunc(handler types.WebsocketHandlerFunc)
 		websocketHandler(r.Context(), c, w, r, ws, handler)
 	}
 }
+
+func populateHeaders(headers map[string][]string, w http.ResponseWriter) {
+	for key, value := range headers {
+		w.Header().Del(key)
+		for _, v := range value {
+			w.Header().Add(key, v)
+		}
+	}
+}
+
+func populateBody(w http.ResponseWriter, body []byte) {
+	if body != nil {
+		_, err := w.Write(body)
+		if err != nil {
+			panic(err)
+		}
+	}
+}

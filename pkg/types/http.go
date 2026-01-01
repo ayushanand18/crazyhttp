@@ -55,7 +55,7 @@ type HttpDecoder func(ctx context.Context, r *http.Request) (request interface{}
 //	headers: HTTP headers to be included in the response.
 //	body:    The encoded response body as a byte slice.
 //	err:     A non-nil error if the response could not be encoded successfully.
-type HttpEncoder func(ctx context.Context, response interface{}) (headers map[string][]string, body []byte, err error)
+type HttpEncoder func(ctx context.Context, response interface{}, reqErr error) (headers map[string][]string, body []byte, err error)
 
 // HttpRequestMiddleware defines a function type for processing or transforming
 // incoming HTTP requests before they reach the handler.

@@ -17,16 +17,17 @@ type method struct {
 	// utility
 	rateLimiter *ratelimiter.RateLimiter
 
-	description           string
-	inputSchema           interface{}
-	outputSchema          interface{}
-	name                  string
-	handler               types.HandlerFunc
-	decoder               types.HttpDecoder
-	encoder               types.HttpEncoder
-	beforeServeMiddleware types.HttpRequestMiddleware
-	afterServeMiddleware  types.HttpResponseMiddleware
-	options               types.MethodOptions
+	description            string
+	inputSchema            interface{}
+	outputSchema           interface{}
+	name                   string
+	handler                types.HandlerFunc
+	decoder                types.HttpDecoder
+	encoder                types.HttpEncoder
+	beforeServeMiddlewares []types.HttpRequestMiddleware
+	afterServeMiddlewares  []types.HttpResponseMiddleware
+	options                types.MethodOptions
+	errorEncoder           types.HttpEncoder
 }
 
 type Method interface {
@@ -43,6 +44,8 @@ type Method interface {
 	WithInputSchema(schema interface{}) Method
 	WithOutputSchema(schema interface{}) Method
 	WithName(name string) Method
+	// WithErrorEncoder to encode errors
+	WithErrorEncoder(encoder types.HttpEncoder) Method
 }
 
 func NewMethod(httpMethod constants.HttpMethodTypes, url string, s *server) Method {
@@ -114,16 +117,21 @@ func (m *method) WithEncoder(encoder types.HttpEncoder) Method {
 }
 
 func (m *method) WithBeforeServe(middleware types.HttpRequestMiddleware) Method {
-	m.beforeServeMiddleware = middleware
+	m.beforeServeMiddlewares = append(m.beforeServeMiddlewares, middleware)
 	return m
 }
 
 func (m *method) WithAfterServe(middleware types.HttpResponseMiddleware) Method {
-	m.afterServeMiddleware = middleware
+	m.afterServeMiddlewares = append(m.afterServeMiddlewares, middleware)
 	return m
 }
 
 func (m *method) WithOptions(options types.MethodOptions) Method {
 	m.options = options
+	return m
+}
+
+func (m *method) WithErrorEncoder(encoder types.HttpEncoder) Method {
+	m.errorEncoder = encoder
 	return m
 }

@@ -8,6 +8,7 @@ import (
 
 	ashttp "github.com/ayushanand18/crazyhttp/internal/http"
 	"github.com/ayushanand18/crazyhttp/pkg/constants"
+	"github.com/ayushanand18/crazyhttp/pkg/errors"
 	"github.com/ayushanand18/crazyhttp/pkg/types"
 	"github.com/gorilla/mux"
 )
@@ -21,8 +22,39 @@ func httpDefaultHandler(
 	r *http.Request,
 	m *method) {
 
+	var response interface{}
 	var request interface{}
 	var err error
+
+	defer func() {
+		if r := recover(); r != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			slog.ErrorContext(ctx, "panic recovered in http handler", "panic:=", r)
+		}
+
+		if err != nil {
+			headers := make(map[string][]string)
+			var body []byte
+			var resErr error
+
+			if m.errorEncoder != nil {
+				headers, body, resErr = m.errorEncoder(ctx, response, err)
+			}
+
+			if resErr != nil {
+				w.WriteHeader(http.StatusInternalServerError)
+				slog.ErrorContext(ctx, "error in encoding error response", "err:=", resErr)
+				return
+			}
+
+			errCode := errors.DecodeErrorToHttpErrorStatus(err)
+			w.WriteHeader(errCode)
+
+			populateHeaders(headers, w)
+			populateBody(w, body)
+			return
+		}
+	}()
 
 	ctx, err = defaultMiddleware(ctx, r)
 	if err != nil {
@@ -67,22 +99,33 @@ func httpDefaultHandler(
 		m.rateLimiter.Allow(key.(string))
 	}
 
-	resp, err := handler(ctx, request)
+	for _, mw := range m.beforeServeMiddlewares {
+		ctx, request, err = mw(ctx, request)
+	}
+
+	response, err = handler(ctx, request)
 	if err != nil {
 		return
+	}
+
+	for _, mw := range m.afterServeMiddlewares {
+		response, err = mw(ctx, response)
+		if err != nil {
+			return
+		}
 	}
 
 	var headers map[string][]string
 	var body []byte
 	if encoder != nil {
-		headers, body, err = encoder(ctx, resp)
+		headers, body, err = encoder(ctx, response, err)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			slog.ErrorContext(ctx, "error in encoding response", "err:=", err)
 			return
 		}
 	} else {
-		headers, body, err = ashttp.DefaultHttpEncode(ctx, resp)
+		headers, body, err = ashttp.DefaultHttpEncode(ctx, response)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			slog.ErrorContext(ctx, "error in default encoding response", "err:=", err)
@@ -92,19 +135,9 @@ func httpDefaultHandler(
 
 	headers = ashttp.PopulateDefaultServerHeaders(ctx, r, headers)
 
-	for key, value := range headers {
-		w.Header().Del(key)
-		for _, v := range value {
-			w.Header().Add(key, v)
-		}
-	}
+	populateHeaders(headers, w)
 
-	if body != nil {
-		_, err := w.Write(body)
-		if err != nil {
-			panic(err)
-		}
-	}
+	populateBody(w, body)
 }
 
 func defaultMiddleware(ctx context.Context, r *http.Request) (outgoingContext context.Context, err error) {

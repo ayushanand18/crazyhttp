@@ -107,7 +107,7 @@ func streamingDefaultHandler(
 			var err error
 
 			if encoder != nil {
-				headers, encoded, err = encoder(ctx, chunk.Data)
+				headers, encoded, err = encoder(ctx, chunk.Data, nil)
 			} else {
 				headers, encoded, err = ashttp.DefaultHttpEncode(ctx, chunk.Data)
 			}
