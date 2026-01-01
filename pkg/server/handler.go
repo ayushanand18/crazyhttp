@@ -30,6 +30,7 @@ func httpDefaultHandler(
 		if r := recover(); r != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			slog.ErrorContext(ctx, "panic recovered in http handler", "panic:=", r)
+			return
 		}
 
 		if err != nil {
@@ -58,7 +59,6 @@ func httpDefaultHandler(
 
 	ctx, err = defaultMiddleware(ctx, r)
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
 		slog.ErrorContext(ctx, "error in default middlewares", "err:=", err)
 		return
 	}
@@ -66,21 +66,22 @@ func httpDefaultHandler(
 	if len(m.options.AllowedOrigins) > 0 && !ashttp.IsOriginAllowed(r.Header.Get("Origin"), m.options.AllowedOrigins) {
 		w.WriteHeader(http.StatusForbidden)
 		slog.ErrorContext(ctx, "origin not allowed", "origin", r.Header.Get("Origin"))
+		err = nil
 		return
 	}
 
 	if decoder != nil {
 		request, err = decoder(ctx, r)
 		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
 			slog.ErrorContext(ctx, "error in decoding request", "err:=", err)
+			err = nil
 			return
 		}
 	} else {
 		request, err = ashttp.DefaultHttpDecode(ctx, r)
 		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
 			slog.ErrorContext(ctx, "error in decoding headers", "err:=", err)
+			err = nil
 			return
 		}
 	}
@@ -94,6 +95,7 @@ func httpDefaultHandler(
 		if !ok {
 			w.WriteHeader(http.StatusInternalServerError)
 			slog.ErrorContext(ctx, "rate limit key is not a string", "key:=", key)
+			err = nil
 			return
 		}
 		m.rateLimiter.Allow(key.(string))
@@ -120,14 +122,12 @@ func httpDefaultHandler(
 	if encoder != nil {
 		headers, body, err = encoder(ctx, response, err)
 		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
 			slog.ErrorContext(ctx, "error in encoding response", "err:=", err)
 			return
 		}
 	} else {
 		headers, body, err = ashttp.DefaultHttpEncode(ctx, response)
 		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
 			slog.ErrorContext(ctx, "error in default encoding response", "err:=", err)
 			return
 		}
