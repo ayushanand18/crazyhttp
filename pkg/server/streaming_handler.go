@@ -66,7 +66,7 @@ func streamingDefaultHandler(
 		var err error
 
 		if decoder != nil {
-			request, err = decoder(ctx, r)
+			ctx, request, err = decoder(ctx, r)
 			if err != nil {
 				w.WriteHeader(errors.DecodeErrorToHttpErrorStatus(err))
 				return

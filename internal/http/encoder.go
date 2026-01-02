@@ -19,12 +19,12 @@ func DefaultHttpEncode(ctx context.Context, response interface{}) (headers map[s
 	return headers, body, nil
 }
 
-func DefaultHttpDecode(ctx context.Context, r *http.Request) (outgoingRequest interface{}, err error) {
+func DefaultHttpDecode(ctx context.Context, r *http.Request) (outgoingContext context.Context, outgoingRequest interface{}, err error) {
 	if e := json.NewDecoder(r.Body).Decode(&outgoingRequest); e != nil {
-		return outgoingRequest, err
+		return ctx, outgoingRequest, e
 	}
 
-	return outgoingRequest, nil
+	return ctx, outgoingRequest, nil
 }
 
 func GetDefaultSerialization(req interface{}) (body []byte, err error) {

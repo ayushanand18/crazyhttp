@@ -39,7 +39,7 @@ type HandlerFunc func(context.Context, interface{}) (interface{}, error)
 //	request: The decoded request object. Implementations should return a struct
 //	         or value appropriate for the handler.
 //	err:     A non-nil error if the request could not be decoded successfully.
-type HttpDecoder func(ctx context.Context, r *http.Request) (request interface{}, err error)
+type HttpDecoder func(ctx context.Context, r *http.Request) (outCtx context.Context, request interface{}, err error)
 
 // HttpEncoder defines a function type for encoding a response object
 // into HTTP headers and a body suitable for sending to the client.

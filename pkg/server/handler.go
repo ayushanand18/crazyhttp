@@ -71,14 +71,14 @@ func httpDefaultHandler(
 	}
 
 	if decoder != nil {
-		request, err = decoder(ctx, r)
+		ctx, request, err = decoder(ctx, r)
 		if err != nil {
 			slog.ErrorContext(ctx, "error in decoding request", "err:=", err)
 			err = nil
 			return
 		}
 	} else {
-		request, err = ashttp.DefaultHttpDecode(ctx, r)
+		ctx, request, err = ashttp.DefaultHttpDecode(ctx, r)
 		if err != nil {
 			slog.ErrorContext(ctx, "error in decoding headers", "err:=", err)
 			err = nil
