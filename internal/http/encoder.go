@@ -20,6 +20,10 @@ func DefaultHttpEncode(ctx context.Context, response interface{}) (headers map[s
 }
 
 func DefaultHttpDecode(ctx context.Context, r *http.Request) (outgoingContext context.Context, outgoingRequest interface{}, err error) {
+	if r.Body == nil {
+		return ctx, nil, nil
+	}
+
 	if e := json.NewDecoder(r.Body).Decode(&outgoingRequest); e != nil {
 		return ctx, outgoingRequest, e
 	}
