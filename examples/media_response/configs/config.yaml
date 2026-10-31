@@ -1,17 +1,20 @@
 service:
   http:
-    h3: 
+    h3:
+      enabled: true
       address:
         ip: ""
-        port: 4431
+        port: 4451
     h1:
+      enabled: true
       address:
         ip: ""
-        port: 4431
+        port: 4451
     h1_ssl:
+      enabled: true
       address:
         ip: ""
-        port: 443
+        port: 4450
   tls:
     generate_if_missing: true
     certificate:

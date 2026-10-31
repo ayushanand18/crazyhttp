@@ -5,33 +5,49 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 	"testing"
 	"time"
 
 	crazyserver "github.com/ayushanand18/crazyhttp/pkg/server"
 )
 
-func TestUserRoute_NaiveGETRequest(t *testing.T) {
+const testAddr = "localhost:4441"
+
+// noBodyDecoder skips JSON decoding — safe for requests with no body (e.g. GET).
+func noBodyDecoder(ctx context.Context, r *http.Request) (context.Context, interface{}, error) {
+	return ctx, nil, nil
+}
+
+func TestMain(m *testing.M) {
 	ctx := context.Background()
-	addr := "localhost:4431"
 
 	server := crazyserver.NewHttpServer(ctx)
 	if err := server.Initialize(ctx); err != nil {
-		t.Fatalf("Initialize failed: %v", err)
+		fmt.Fprintf(os.Stderr, "Initialize failed: %v\n", err)
+		os.Exit(1)
 	}
 
-	server.GET("/test").Serve(func(ctx context.Context, request interface{}) (interface{}, error) {
-		return "Hello World from GET.", nil
+	server.GET("/test").
+		WithDecoder(noBodyDecoder).
+		Serve(func(ctx context.Context, request interface{}) (interface{}, error) {
+			return "Hello World from GET.", nil
+		})
+
+	server.POST("/test").WithDecoder(noBodyDecoder).Serve(func(ctx context.Context, request interface{}) (interface{}, error) {
+		return "Hello World from POST.", nil
 	})
 
 	go func() {
 		_ = server.ListenAndServe(ctx)
 	}()
-	time.Sleep(50 * time.Millisecond)
+	time.Sleep(100 * time.Millisecond)
 
-	client := &http.Client{}
+	os.Exit(m.Run())
+}
 
-	resp, err := client.Get(fmt.Sprintf("http://%s/test", addr))
+func TestUserRoute_NaiveGETRequest(t *testing.T) {
+	resp, err := http.Get(fmt.Sprintf("http://%s/test", testAddr))
 	if err != nil {
 		t.Fatalf("Request failed: %v", err)
 	}
@@ -48,31 +64,10 @@ func TestUserRoute_NaiveGETRequest(t *testing.T) {
 	if string(body) != "Hello World from GET." {
 		t.Errorf("Expected body \"Hello World from GET.\" got %q", body)
 	}
-
 }
 
 func TestUserRoute_NaivePOSTRequest(t *testing.T) {
-	ctx := context.Background()
-	addr := "localhost:4431"
-
-	server := crazyserver.NewHttpServer(ctx)
-	if err := server.Initialize(ctx); err != nil {
-		t.Fatalf("Initialize failed: %v", err)
-	}
-
-	server.POST("/test").Serve(func(ctx context.Context, request interface{}) (interface{}, error) {
-		return "Hello World from POST.", nil
-	})
-
-	go func() {
-		_ = server.ListenAndServe(ctx)
-	}()
-	time.Sleep(50 * time.Millisecond)
-
-	client := &http.Client{}
-
-	contentType := "text/plain; utf-8"
-	resp, err := client.Post(fmt.Sprintf("http://%s/test", addr), contentType, nil)
+	resp, err := http.Post(fmt.Sprintf("http://%s/test", testAddr), "text/plain; utf-8", nil)
 	if err != nil {
 		t.Fatalf("Request failed: %v", err)
 	}
@@ -89,5 +84,4 @@ func TestUserRoute_NaivePOSTRequest(t *testing.T) {
 	if string(body) != "Hello World from POST." {
 		t.Errorf("Expected body 'Hello World from POST.', got %q", body)
 	}
-
 }

@@ -2,8 +2,16 @@ package main_test
 
 import (
 	"context"
+	"crypto/ecdsa"
+	"crypto/elliptic"
+	"crypto/rand"
+	"crypto/x509"
+	"crypto/x509/pkix"
+	"encoding/pem"
 	"fmt"
+	"math/big"
 	"net"
+	"os"
 	"testing"
 	"time"
 
@@ -13,7 +21,45 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-// waitForServer waits until TCP port is accepting connections
+func writeTempCert() (cleanup func(), err error) {
+	priv, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	if err != nil {
+		return nil, err
+	}
+	tmpl := &x509.Certificate{
+		SerialNumber: big.NewInt(1),
+		Subject:      pkix.Name{CommonName: "localhost"},
+		NotBefore:    time.Now().Add(-time.Minute),
+		NotAfter:     time.Now().Add(time.Hour),
+		KeyUsage:     x509.KeyUsageDigitalSignature | x509.KeyUsageKeyEncipherment,
+		ExtKeyUsage:  []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
+		DNSNames:     []string{"localhost"},
+		IPAddresses:  []net.IP{net.ParseIP("127.0.0.1")},
+	}
+	derBytes, err := x509.CreateCertificate(rand.Reader, tmpl, tmpl, &priv.PublicKey, priv)
+	if err != nil {
+		return nil, err
+	}
+	certPEM := pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: derBytes})
+	privDER, err := x509.MarshalECPrivateKey(priv)
+	if err != nil {
+		return nil, err
+	}
+	keyPEM := pem.EncodeToMemory(&pem.Block{Type: "EC PRIVATE KEY", Bytes: privDER})
+	if err := os.WriteFile("cert.pem", certPEM, 0600); err != nil {
+		return nil, err
+	}
+	if err := os.WriteFile("key.pem", keyPEM, 0600); err != nil {
+		os.Remove("cert.pem")
+		return nil, err
+	}
+	return func() {
+		os.Remove("cert.pem")
+		os.Remove("key.pem")
+	}, nil
+}
+
+// waitForServer polls until the TCP port accepts connections or times out.
 func waitForServer(addr string) error {
 	for i := 0; i < 20; i++ {
 		conn, err := net.DialTimeout("tcp", addr, 100*time.Millisecond)
@@ -26,23 +72,26 @@ func waitForServer(addr string) error {
 	return fmt.Errorf("server not ready on %s", addr)
 }
 
-func TestUserRoute_WebsocketRequest(t *testing.T) {
-	ctx := context.Background()
-	addr := "localhost:4431"
+func TestMain(m *testing.M) {
+	cleanup, err := writeTempCert()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "failed to write test TLS cert: %v\n", err)
+		os.Exit(1)
+	}
+	defer cleanup()
 
+	ctx := context.Background()
 	server := crazyserver.NewHttpServer(ctx)
 	if err := server.Initialize(ctx); err != nil {
-		t.Fatalf("Initialize failed: %v", err)
+		fmt.Fprintf(os.Stderr, "Initialize failed: %v\n", err)
+		os.Exit(1)
 	}
 
-	// WebSocket endpoint
 	server.WebSocket("/ws-test").
 		WithOptions(types.WebSocketOption{AllowedOrigins: []string{"*"}}).
 		Serve(func(ctx context.Context) error {
 			reqCh := ctx.Value(constants.WebsocketRequestChannel).(chan types.WebsocketStreamChunk)
 			respCh := ctx.Value(constants.WebsocketResponseChannel).(chan types.WebsocketStreamChunk)
-
-			// Keep the handler alive to echo messages
 			for chunk := range reqCh {
 				respCh <- types.WebsocketStreamChunk{
 					Data: []byte(fmt.Sprintf("Echo: %s", chunk.Data)),
@@ -51,20 +100,20 @@ func TestUserRoute_WebsocketRequest(t *testing.T) {
 			return nil
 		})
 
-	// Start server in background
 	go func() {
-		if err := server.ListenAndServe(ctx); err != nil {
-			t.Logf("Server stopped: %v", err)
-		}
+		_ = server.ListenAndServe(ctx)
 	}()
 
-	// Wait for server to be ready
-	if err := waitForServer(addr); err != nil {
-		t.Fatalf("Server not ready: %v", err)
+	if err := waitForServer("localhost:4443"); err != nil {
+		fmt.Fprintf(os.Stderr, "server not ready: %v\n", err)
+		os.Exit(1)
 	}
 
-	// Connect WebSocket client
-	wsURL := fmt.Sprintf("ws://%s/ws-test", addr)
+	os.Exit(m.Run())
+}
+
+func TestUserRoute_WebsocketRequest(t *testing.T) {
+	wsURL := "ws://localhost:4443/ws-test"
 	dialer := websocket.Dialer{}
 	conn, _, err := dialer.Dial(wsURL, nil)
 	if err != nil {
@@ -72,13 +121,11 @@ func TestUserRoute_WebsocketRequest(t *testing.T) {
 	}
 	defer conn.Close()
 
-	// Send a message
 	msg := "hello"
 	if err := conn.WriteMessage(websocket.TextMessage, []byte(msg)); err != nil {
 		t.Fatalf("WriteMessage failed: %v", err)
 	}
 
-	// Read the echo
 	_, p, err := conn.ReadMessage()
 	if err != nil {
 		t.Fatalf("ReadMessage failed: %v", err)
