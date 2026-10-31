@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 	"testing"
 	"time"
 
@@ -40,27 +41,35 @@ func UserIdHandler(ctx context.Context, request interface{}) (response interface
 	}, nil
 }
 
-func TestUserRoute_WithUserIdHeader(t *testing.T) {
+// noBodyDecoder skips JSON decoding — safe for requests with no body (e.g. GET).
+func noBodyDecoder(ctx context.Context, r *http.Request) (context.Context, interface{}, error) {
+	return ctx, nil, nil
+}
+
+func TestMain(m *testing.M) {
 	ctx := context.Background()
-	addr := "localhost:4431"
 
 	server := crazyserver.NewHttpServer(ctx)
 	if err := server.Initialize(ctx); err != nil {
-		t.Fatalf("Initialize failed: %v", err)
+		fmt.Fprintf(os.Stderr, "Initialize failed: %v\n", err)
+		os.Exit(1)
 	}
 
-	m := server.GET("/users/{user_id}").
+	server.GET("/users/{user_id}").
+		WithDecoder(noBodyDecoder).
 		WithEncoder(encoder).
 		Serve(UserIdHandler)
-
-	if m == nil {
-
-	}
 
 	go func() {
 		_ = server.ListenAndServe(ctx)
 	}()
 	time.Sleep(500 * time.Millisecond)
+
+	os.Exit(m.Run())
+}
+
+func TestUserRoute_WithUserIdHeader(t *testing.T) {
+	addr := "localhost:4445"
 
 	client := &http.Client{}
 

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net"
+	"os"
 	"testing"
 	"time"
 
@@ -13,7 +14,6 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-// waitForServer waits until TCP port is accepting connections
 func waitForServer(addr string) error {
 	for i := 0; i < 20; i++ {
 		conn, err := net.DialTimeout("tcp", addr, 100*time.Millisecond)
@@ -26,23 +26,19 @@ func waitForServer(addr string) error {
 	return fmt.Errorf("server not ready on %s", addr)
 }
 
-func TestUserRoute_WebsocketRequest(t *testing.T) {
+func TestMain(m *testing.M) {
 	ctx := context.Background()
-	addr := "localhost:4431"
-
 	server := crazyserver.NewHttpServer(ctx)
 	if err := server.Initialize(ctx); err != nil {
-		t.Fatalf("Initialize failed: %v", err)
+		fmt.Fprintf(os.Stderr, "Initialize failed: %v\n", err)
+		os.Exit(1)
 	}
 
-	// WebSocket endpoint
 	server.WebSocket("/ws-test").
 		WithOptions(types.WebSocketOption{AllowedOrigins: []string{"*"}}).
 		Serve(func(ctx context.Context) error {
 			reqCh := ctx.Value(constants.WebsocketRequestChannel).(chan types.WebsocketStreamChunk)
 			respCh := ctx.Value(constants.WebsocketResponseChannel).(chan types.WebsocketStreamChunk)
-
-			// Keep the handler alive to echo messages
 			for chunk := range reqCh {
 				respCh <- types.WebsocketStreamChunk{
 					Data: []byte(fmt.Sprintf("Echo: %s", chunk.Data)),
@@ -51,20 +47,20 @@ func TestUserRoute_WebsocketRequest(t *testing.T) {
 			return nil
 		})
 
-	// Start server in background
 	go func() {
-		if err := server.ListenAndServe(ctx); err != nil {
-			t.Logf("Server stopped: %v", err)
-		}
+		_ = server.ListenAndServe(ctx)
 	}()
 
-	// Wait for server to be ready
-	if err := waitForServer(addr); err != nil {
-		t.Fatalf("Server not ready: %v", err)
+	if err := waitForServer("localhost:4443"); err != nil {
+		fmt.Fprintf(os.Stderr, "server not ready: %v\n", err)
+		os.Exit(1)
 	}
 
-	// Connect WebSocket client
-	wsURL := fmt.Sprintf("ws://%s/ws-test", addr)
+	os.Exit(m.Run())
+}
+
+func TestUserRoute_WebsocketRequest(t *testing.T) {
+	wsURL := "ws://localhost:4443/ws-test"
 	dialer := websocket.Dialer{}
 	conn, _, err := dialer.Dial(wsURL, nil)
 	if err != nil {
@@ -72,13 +68,11 @@ func TestUserRoute_WebsocketRequest(t *testing.T) {
 	}
 	defer conn.Close()
 
-	// Send a message
 	msg := "hello"
 	if err := conn.WriteMessage(websocket.TextMessage, []byte(msg)); err != nil {
 		t.Fatalf("WriteMessage failed: %v", err)
 	}
 
-	// Read the echo
 	_, p, err := conn.ReadMessage()
 	if err != nil {
 		t.Fatalf("ReadMessage failed: %v", err)

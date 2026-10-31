@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 	"strings"
 	"testing"
 	"time"
@@ -17,35 +18,37 @@ import (
 func HelloWorldStreaming(ctx context.Context, request interface{}) (response interface{}, err error) {
 	for i := range 5 {
 		time.Sleep(time.Duration(1) * time.Second)
-
 		channel := ctx.Value(constants.StreamingResponseChannelContextKey).(chan types.StreamChunk)
 		channel <- types.StreamChunk{
 			Id:   uint32(i),
 			Data: []byte(fmt.Sprintf("Chunk: %d \n\n", i)),
 		}
 	}
-
 	return nil, nil
 }
 
-func TestHTTP3Server_BasicStreamingResponse(t *testing.T) {
+func TestMain(m *testing.M) {
 	ctx := context.Background()
-	addr := "localhost:4431"
-
 	s := crazyserver.NewHttpServer(ctx)
 	if err := s.Initialize(ctx); err != nil {
-		t.Fatalf("server initialization failed: %v", err)
+		fmt.Fprintf(os.Stderr, "server initialization failed: %v\n", err)
+		os.Exit(1)
 	}
 
-	s.GET("/streaming").Serve(HelloWorldStreaming).
-		WithOptions(types.MethodOptions{
-			IsStreamingResponse: true,
-		})
+	s.GET("/streaming").
+		WithOptions(types.MethodOptions{IsStreamingResponse: true}).
+		Serve(HelloWorldStreaming)
 
 	go func() {
 		_ = s.ListenAndServe(ctx)
 	}()
-	time.Sleep(50 * time.Millisecond)
+	time.Sleep(100 * time.Millisecond)
+
+	os.Exit(m.Run())
+}
+
+func TestHTTP3Server_BasicStreamingResponse(t *testing.T) {
+	addr := "localhost:4449"
 
 	client := &http.Client{}
 

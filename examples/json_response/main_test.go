@@ -7,11 +7,11 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 	"testing"
 	"time"
 
 	crazyserver "github.com/ayushanand18/crazyhttp/pkg/server"
-
 	qchttp3 "github.com/quic-go/quic-go/http3"
 )
 
@@ -20,26 +20,34 @@ type DummyResponse struct {
 	Value uint32 `json:"value"`
 }
 
-func TestUserRoute_NaiveJSONResponse(t *testing.T) {
+// noBodyDecoder skips JSON decoding — safe for requests with no body (e.g. GET).
+func noBodyDecoder(ctx context.Context, r *http.Request) (context.Context, interface{}, error) {
+	return ctx, nil, nil
+}
+
+func TestMain(m *testing.M) {
 	ctx := context.Background()
-	addr := "localhost:4431"
 
 	server := crazyserver.NewHttpServer(ctx)
 	if err := server.Initialize(ctx); err != nil {
-		t.Fatalf("Initialize failed: %v", err)
+		fmt.Fprintf(os.Stderr, "Initialize failed: %v\n", err)
+		os.Exit(1)
 	}
 
-	server.GET("/json").Serve(func(ctx context.Context, req interface{}) (interface{}, error) {
-		return DummyResponse{
-			Key:   "test",
-			Value: 123,
-		}, nil
+	server.GET("/json").WithDecoder(noBodyDecoder).Serve(func(ctx context.Context, req interface{}) (interface{}, error) {
+		return DummyResponse{Key: "test", Value: 123}, nil
 	})
 
 	go func() {
 		_ = server.ListenAndServe(ctx)
 	}()
-	time.Sleep(50 * time.Millisecond)
+	time.Sleep(100 * time.Millisecond)
+
+	os.Exit(m.Run())
+}
+
+func TestUserRoute_NaiveJSONResponse(t *testing.T) {
+	addr := "localhost:4447"
 
 	client := &http.Client{
 		Transport: &qchttp3.Transport{
@@ -65,9 +73,7 @@ func TestUserRoute_NaiveJSONResponse(t *testing.T) {
 	}
 
 	value := DummyResponse{}
-
 	if err := json.Unmarshal(body, &value); err != nil {
 		t.Errorf("Error while parsing JSON, got %q", body)
 	}
-
 }
