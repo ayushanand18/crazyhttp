@@ -9,7 +9,6 @@ import (
 
 	ashttp "github.com/ayushanand18/crazyhttp/internal/http"
 	"github.com/ayushanand18/crazyhttp/pkg/constants"
-	"github.com/ayushanand18/crazyhttp/pkg/errors"
 	"github.com/ayushanand18/crazyhttp/pkg/types"
 )
 
@@ -25,7 +24,6 @@ func streamingDefaultHandler(
 	w.Header().Set("Content-Type", "text/event-stream")
 	w.Header().Set("Cache-Control", "no-cache")
 	w.Header().Set("X-Accel-Buffering", "no")
-	w.WriteHeader(http.StatusOK)
 
 	if len(m.options.AllowedOrigins) > 0 &&
 		!ashttp.IsOriginAllowed(r.Header.Get("Origin"), m.options.AllowedOrigins) {
@@ -39,6 +37,8 @@ func streamingDefaultHandler(
 		http.Error(w, "Streaming unsupported by this server!", http.StatusInternalServerError)
 		return
 	}
+
+	w.WriteHeader(http.StatusOK)
 
 	// master cancel context
 	ctx, cancel := context.WithCancel(ctx)
@@ -68,7 +68,7 @@ func streamingDefaultHandler(
 		if decoder != nil {
 			ctx, request, err = decoder(ctx, r)
 			if err != nil {
-				w.WriteHeader(errors.DecodeErrorToHttpErrorStatus(err))
+				slog.ErrorContext(ctx, "decode error", "error", err)
 				return
 			}
 		}
@@ -80,7 +80,6 @@ func streamingDefaultHandler(
 			}
 			k, ok := key.(string)
 			if !ok {
-				w.WriteHeader(http.StatusInternalServerError)
 				slog.ErrorContext(ctx, "rate limit key is not a string", "key:=", key)
 				return
 			}
@@ -89,7 +88,7 @@ func streamingDefaultHandler(
 
 		_, err = handler(ctx, request)
 		if err != nil {
-			w.WriteHeader(errors.DecodeErrorToHttpErrorStatus(err))
+			slog.ErrorContext(ctx, "handler error", "error", err)
 			return
 		}
 	}()
@@ -112,7 +111,7 @@ func streamingDefaultHandler(
 				headers, encoded, err = ashttp.DefaultHttpEncode(ctx, chunk.Data)
 			}
 			if err != nil {
-				w.WriteHeader(errors.DecodeErrorToHttpErrorStatus(err))
+				slog.ErrorContext(ctx, "encode error", "error", err)
 				cancel()
 				return
 			}
