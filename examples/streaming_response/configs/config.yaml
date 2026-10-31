@@ -16,12 +16,27 @@ service:
         ip: ""
         port: 4448
   tls:
-    generate_if_missing: true
+    generate_if_missing: false
     certificate:
-      raw: ""
+      raw: |
+        -----BEGIN CERTIFICATE-----
+        MIIBXDCCAQKgAwIBAgIBATAKBggqhkjOPQQDAjAUMRIwEAYDVQQDEwlsb2NhbGhv
+        c3QwIBcNMjYxMDMxMTYwMTQ1WhgPMjEyNjEwMDcxNjAyNDVaMBQxEjAQBgNVBAMT
+        CWxvY2FsaG9zdDBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IABEJKsHqqZEflpKNV
+        QlOLRL8unfeU1QtUpavAAU2NjIT3t4qYs/VVlH6V1IUCCwxN2jk6brmG5GA5SI4G
+        k6WwP9CjQzBBMA4GA1UdDwEB/wQEAwIFoDATBgNVHSUEDDAKBggrBgEFBQcDATAa
+        BgNVHREEEzARgglsb2NhbGhvc3SHBH8AAAEwCgYIKoZIzj0EAwIDSAAwRQIhAKFL
+        DgV63dUEEFfcvfhihvxNrr9LOAA2M/MeByZ79ltTAiBiqwMnQMf5jv6s7HLThcL3
+        mHG/hcH+BN176pqH87Lj/g==
+        -----END CERTIFICATE-----
       path: cert.pem
     key:
-      raw: ""
+      raw: |
+        -----BEGIN EC PRIVATE KEY-----
+        MHcCAQEEIChjUbsd7CY0ze4QSu6x5sw0pvcDH429bVqHtCMWhXMuoAoGCCqGSM49
+        AwEHoUQDQgAEQkqweqpkR+Wko1VCU4tEvy6d95TVC1Slq8ABTY2MhPe3ipiz9VWU
+        fpXUhQILDE3aOTpuuYbkYDlIjgaTpbA/0A==
+        -----END EC PRIVATE KEY-----
       path: key.pem
   mcp:
     enabled: false
